@@ -1,0 +1,8 @@
+#!/usr/bin/env python
+
+from os import environ as e
+from os import system as s
+from sys import argv
+
+cmd = "java -jar {}/scripts/Ordt.jar {}".format( e["CWD"], ' '.join(argv[1:]) )
+s(cmd)

@@ -1,0 +1,275 @@
+/*
+	This file specifies the register file address map and definitions of each field.
+	This is the master spec that the RTL and Python model is generated from.
+
+	There are 4 main component types: field, reg, regfile and addrmap.  Any reg with
+	one or more interrupt fields generates an interrupt register which has a single
+	bit output, the vlaue of which is the logical OR of all interrupt fields.
+*/
+
+
+// ----------------------------------------------------------------------
+// Define the reset to use
+// ----------------------------------------------------------------------
+
+signal reset_n { activelow; cpuif_reset; };
+
+
+// ----------------------------------------------------------------------
+// Generic Field Definitions
+// ----------------------------------------------------------------------
+
+field interrupt {
+      level intr ;    // This is a level sensitive interrupt
+      hw=na ;         // Hardware has no access
+      sw=r ;          // Software can read only
+      rclr ;          // Clear on read
+      reset = 1'b0 ;  // Reset value is zero
+};
+
+field interrupt_enable {
+      hw=na ;         // Hardware has no access
+      sw=rw ;         // Software can read/write
+      reset = 1'b0 ;  // Reset value is zero
+};
+
+field master_interrupt {
+      hw=na ;           // Hardware has no access
+      sw=r ;            // Software can only read
+      nonsticky intr ;  // Clear the lower level interrupt to clear the flag
+      reset = 1'b0 ;
+};
+
+field master_interrupt_en {
+      hw=na ;         // Hardware has no access
+      sw=rw ;         // Software can only read
+      reset = 1'b0 ;  // Reset value is zero
+};
+
+field configuration {
+      hw=r ;          // Hardware can only read
+      sw=rw ;         // Software can read/write
+      reset = 1'b0 ;  // Reset value is zero
+};
+
+field hardwired {
+      hw=w ;          // Hardware can write only
+      sw=r ;          // Software can read only
+      reset = 1'b0 ;  // Reset value is zero
+};
+
+field pulse {
+      hw=r ;          // Hardware can only read
+      sw=w ;          // Software can write
+      reset = 1'b0 ;  // Reset value is zero
+      singlepulse ;   // Generates a single cycle pulse on write
+      desc = "Writing a 1 causes a single cycle pulse" ;
+};
+    
+field status {
+      we ;
+      hw=w ;          // Hardware updates
+      sw=rw ;         // Software only reads but new rw to create flop
+      reset = 1'b0 ;  // Reset value is zero
+};
+
+
+
+// ----------------------------------------------------------------------
+// Sticky Interrupt Registers
+// ----------------------------------------------------------------------
+
+// Generate a bank of 16 x 8 single bit interrupts
+
+<% for( $i=0; $i<16; $i+=1 ) { %>
+reg irq_reg_<%=$i%> {
+    regwidth = 16 ;
+    <% for( $j=0; $j<8; $j+=1 ) { %>
+    interrupt _user_irq_<%=$j%> ;
+    <% } %>
+};
+<% } %>
+
+// Generate a bank of 16 x 8 single bit interrupt enables
+
+<% for( $i=0; $i<16; $i+=1 ) { %>
+reg irq_en_reg_<%=$i%> {
+    regwidth = 16 ;
+    <% for( $j=0; $j<8; $j+=1 ) { %>
+    interrupt_enable _user_irq_<%=$j%> ;
+    <% } %>
+};
+<% } %>
+
+
+// ----------------------------------------------------------------------
+// Interrupt Master Registers
+// ----------------------------------------------------------------------
+
+/* This register aggregates all leaf interrupt registers.  It is 
+non-sticky so only passes through the lower level of hierarchy */
+
+reg irq_master_reg {
+    regwidth = 16 ;
+    <% for( $i=0; $i<16; $i+=1 ) { %>
+    master_interrupt _irq_<%=$i%> ;
+    <% } %>
+};
+
+reg irq_master_en_reg {
+    regwidth = 16 ;
+    <% for( $i=0; $i<16; $i+=1 ) { %>
+    master_interrupt_en _irq_<%=$i%> ;
+    <% } %>
+};
+
+
+// ----------------------------------------------------------------------
+// Interrupt Register File
+// ----------------------------------------------------------------------
+
+regfile user_irq_regs {
+	<% for( $i=0; $i<16; $i+=1 ) { %>
+	irq_reg_<%=$i%> _irq_<%=$i%> ;
+	<% } %>
+};
+
+regfile user_irq_en_regs {
+	<% for( $i=0; $i<16; $i+=1 ) { %>
+	irq_en_reg_<%=$i%> _irq_en_<%=$i%> ;
+	<% } %>
+};
+
+
+
+// ----------------------------------------------------------------------
+// Top Level Control and Status Registers
+// ----------------------------------------------------------------------
+
+reg ctrl_reg {
+    regwidth = 16 ;
+    name = "Global Control Register" ;
+    
+    default hw=r ;
+    default sw=rw ;
+    default reset = 1'b0 ;
+    
+    field {
+      desc = "Global enable for all interrupts" ;
+      hw=na;
+    } global_irq_en ;
+};
+
+
+reg status_reg {
+    regwidth = 16 ;
+    name = "Global Status Register" ;
+
+    default hw=w ;
+    default sw=r ;
+    default reset = 1'b0 ;
+
+    field {
+      desc = "Global interrupt flag" ;
+      hw=na ;
+      nonsticky intr;
+    } global_irq ;
+};
+
+
+// ----------------------------------------------------------------------
+// Configuration and Status Registers
+// ----------------------------------------------------------------------
+
+reg user_cfg_reg {
+    regwidth = 16 ;
+    field {
+      hw=r ;           // Hardware can only read
+      sw=rw ;          // Software can read/write
+      reset = 16'd0 ;  // Reset value is zero
+    } user_cfg[16] ;
+};
+
+reg user_stat_reg {
+    regwidth = 16 ;
+    field {
+      we ;
+      hw=w ;          // Hardware updates
+      sw=rw ;         // Software only reads but new rw to create flop
+      reset = 16'd0 ; // Reset value is zero
+    } user_stat[16] ;
+};
+
+// ----------------------------------------------------------------------
+// Configuration and Status Register Files
+// ----------------------------------------------------------------------
+
+regfile configuration_regs {
+
+	user_cfg_reg _user_cfg_0 ;
+	user_cfg_reg _user_cfg_1 ;
+	user_cfg_reg _user_cfg_2 ;
+	user_cfg_reg _user_cfg_3 ;
+};
+
+regfile status_regs {
+
+	user_stat_reg _user_stat_0 ;
+	user_stat_reg _user_stat_1 ;
+	user_stat_reg _user_stat_2 ;
+	user_stat_reg _user_stat_3 ;
+	user_stat_reg _user_stat_4 ;
+	user_stat_reg _user_stat_5 ;
+};
+
+// ----------------------------------------------------------------------
+// Root Address Map
+// ----------------------------------------------------------------------
+
+addrmap address_map {
+
+	reset_n reset_n;
+	
+	/*************  Address Map **************/
+
+	// Instantiate the generic control and status regs
+	ctrl_reg    _control  @0x000 ;
+	status_reg  _status   @0x002 ;
+
+	// Instantiate the interrupt status and enable regs.
+	irq_master_reg     _user_irq_status  @0x004 ;
+	irq_master_en_reg  _user_irq_enable  @0x006 ;
+
+	// Instantiate the interrupt regs.
+	user_irq_regs     _user_irq_flags     @0x020 ;
+	user_irq_en_regs  _user_irq_en_flags  @0x040 ;
+
+	// Instantiate the Configuration Regs
+	configuration_regs  _user_cfg_regs  @0x080 ;
+
+	// Instantiate the Status Regs
+	status_regs  _user_stat_regs  @0x100 ;
+
+	
+	/*************  Hardware Hookup **************/
+
+	// Hook up all the leaf interrupt enables
+	<% for( $i=0; $i<16; $i+=1 ) { %>
+	_user_irq_flags._irq_<%=$i%>.*->enable = _user_irq_en_flags._irq_en_<%=$i%>.* ;
+	<% } %>
+
+	// Connect the intr output from all the leaf regs to the status register.
+	<% for( $i=0; $i<16; $i+=1 ) { %>
+	_user_irq_status._irq_<%=$i%>->next = _user_irq_flags._irq_<%=$i%>->intr ;
+	<% } %>
+
+	// Hook up the enables for the status register
+	_user_irq_status.*->enable = _user_irq_enable.* ;
+
+	// Mask the global interrupt enable
+	_status.global_irq->enable = _control.global_irq_en ;
+	
+	// Hook up the status intr output to the global reg
+	_status.global_irq->next = _user_irq_status->intr;
+
+} regfile_addr_map;

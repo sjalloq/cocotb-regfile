@@ -1,0 +1,8 @@
+global {
+       min_data_size = 8
+}
+
+output systemverilog {
+       root_decoder_interface = parallel
+       use_async_resets = true
+}

@@ -1,0 +1,7 @@
+*/**/*~
+*/**/__pycache__
+rdl/regfile.rdl.pp.final
+build
+sim_build
+results.xml
+regfile.vcd

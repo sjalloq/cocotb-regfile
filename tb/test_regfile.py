@@ -442,7 +442,7 @@ class RegfileTB(object):
 
    def __init__(self, dut, debug=False):
       self.dut         = dut
-      self.regfile     = AM.AddressMap('../xml/ordt_addrmap.xml')
+      self.regfile     = AM.AddressMap(os.path.join(os.environ['TB_HOME'], '../xml/ordt_addrmap.xml'))
       self._irq        = Event(name="Host IRQ Event")
       self.irq_drv     = IrqDriver(dut, self.regfile)
       self.irq_mon     = IrqMonitor(dut, self.regfile)

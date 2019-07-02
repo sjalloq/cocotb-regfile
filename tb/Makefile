@@ -1,13 +1,15 @@
+export TB_HOME:=$(shell pwd)
+
 TOPLEVEL_LANG ?= verilog
-PYTHONPATH := ../python:./:$(PYTHONPATH)
-SIM ?= icarus
+PYTHONPATH := $(TB_HOME)/../python:$(TB_HOME):$(PYTHONPATH)
+SIM ?= questa
 
 # Verilog source
-VERILOG_SOURCES=tb.v
-VERILOG_SOURCES+=../verilog/regfile.v
-VERILOG_SOURCES+=../verilog/regfile_addr_map_pio.v
-VERILOG_SOURCES+=../verilog/regfile_addr_map_jrdl_decode.v
-VERILOG_SOURCES+=../verilog/regfile_addr_map_jrdl_logic.v
+VERILOG_SOURCES=$(TB_HOME)/tb.v
+VERILOG_SOURCES+=$(TB_HOME)/../verilog/regfile.v
+VERILOG_SOURCES+=$(TB_HOME)/../verilog/regfile_addr_map_pio.v
+VERILOG_SOURCES+=$(TB_HOME)/../verilog/regfile_addr_map_jrdl_decode.v
+VERILOG_SOURCES+=$(TB_HOME)/../verilog/regfile_addr_map_jrdl_logic.v
 
 # Define the top level module name
 TOPLEVEL:=tb

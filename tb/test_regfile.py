@@ -193,7 +193,7 @@ class RegWrTrxn(RegTrxn):
 
 class RegfileDriver(BusDriver):
 
-   _signals = ["ren", "wen", "addr", "wdata", "rdata", "ack", "nack"]
+   _signals = ["ren", "wen", "addr", "wdata", "ack", "nack" ]
 
    def __init__(self, entity, name, clock, **kwargs):
       BusDriver.__init__(self, entity, name, clock, **kwargs)
@@ -238,7 +238,10 @@ class RegfileDriver(BusDriver):
       
       # Drive the transaction
       yield RisingEdge(self.clock)
-      self.bus <= trxn
+      self.bus.wen   <= trxn.wen
+      self.bus.ren   <= trxn.ren
+      self.bus.addr  <= trxn.addr
+      self.bus.wdata <= trxn.wdata
 
       # De-assert the read/write enable in the next cycle
       yield RisingEdge(self.clock)
